@@ -11,7 +11,7 @@ namespace SentimentAnalysis
         static void Main(string[] args)
         {
                         
-            List<SentimentData> sentimentDatas = new List<SentimentData>
+            IEnumerable<SentimentData> sentimentDatas = new List<SentimentData>
             {
                 new SentimentData { SePositivo = true, Sentimento = "muito bom" },
                 new SentimentData { SePositivo = true, Sentimento = "gostei disso" },
