@@ -2,16 +2,16 @@
 
 namespace SentimentAnalysis
 {
-    public class SentimentData
+    public class Sentimento
     {
         [LoadColumn(0)]
-        public string Sentimento;
+        public string Comentario;
 
         [LoadColumn(1), ColumnName("Label")]
         public bool SePositivo;
     }
 
-    public class SentimentPrediction : SentimentData
+    public class PredicacaoDeSentimento : Sentimento
     {
 
         [ColumnName("PredictedLabel")]

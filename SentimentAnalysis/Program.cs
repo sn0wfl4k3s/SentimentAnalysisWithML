@@ -11,33 +11,34 @@ namespace SentimentAnalysis
         static void Main(string[] args)
         {
                         
-            IEnumerable<SentimentData> sentimentDatas = new List<SentimentData>
+            IEnumerable<Sentimento> sentimentDatas = new List<Sentimento>
             {
-                new SentimentData { SePositivo = true, Sentimento = "muito bom" },
-                new SentimentData { SePositivo = true, Sentimento = "gostei disso" },
-                new SentimentData { SePositivo = true, Sentimento = "gostei do que vocês fizeram" },
-                new SentimentData { SePositivo = true, Sentimento = "bom trabalho" },
-                new SentimentData { SePositivo = false, Sentimento = "não gostei" },
-                new SentimentData { SePositivo = false, Sentimento = "muito ruim" }
+                new Sentimento { SePositivo = true, Comentario = "muito bom" },
+                new Sentimento { SePositivo = true, Comentario = "gostei disso" },
+                new Sentimento { SePositivo = true, Comentario = "gostei do que vocês fizeram" },
+                new Sentimento { SePositivo = true, Comentario = "bom trabalho" },
+                new Sentimento { SePositivo = false, Comentario = "não gostei" },
+                new Sentimento { SePositivo = false, Comentario = "muito ruim" }
             };
 
             MLContext mlContext = new MLContext(seed: 0);
             IDataView dataView = mlContext.Data.LoadFromEnumerable(sentimentDatas);
             TrainTestData splitDataView = mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2);
             var estimator = mlContext.Transforms.Text.FeaturizeText
-                (outputColumnName: "Features", inputColumnName: nameof(SentimentData.Sentimento))
+                (outputColumnName: "Features", inputColumnName: nameof(Sentimento.Comentario))
                 .Append(mlContext.BinaryClassification.Trainers.SdcaLogisticRegression
                 (labelColumnName: "Label", featureColumnName: "Features"));
 
             var model = estimator.Fit(splitDataView.TrainSet);
-            PredictionEngine<SentimentData, SentimentPrediction> predictionFunction 
-                = mlContext.Model.CreatePredictionEngine<SentimentData, SentimentPrediction>(model);
+            PredictionEngine<Sentimento, PredicacaoDeSentimento> predictionFunction 
+                = mlContext.Model.CreatePredictionEngine<Sentimento, PredicacaoDeSentimento>(model);
 
-            SentimentData sampleStatement = new SentimentData
+            Sentimento sampleStatement = new Sentimento
             {
-                Sentimento = "tá bom"
+                Comentario = "tá bom"
             };
             var resultPrediction = predictionFunction.Predict(sampleStatement);
+
             Console.WriteLine(resultPrediction.Predicao);
             Console.ReadKey();          
 
