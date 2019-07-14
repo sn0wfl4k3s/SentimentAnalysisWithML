@@ -22,7 +22,7 @@ namespace SentimentAnalysis
             };
 
             MLContext mlContext = new MLContext(seed: 0);
-            IDataView dataView = mlContext.Data.LoadFromEnumerable<SentimentData>(sentimentDatas);
+            IDataView dataView = mlContext.Data.LoadFromEnumerable(sentimentDatas);
             TrainTestData splitDataView = mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2);
             var estimator = mlContext.Transforms.Text.FeaturizeText
                 (outputColumnName: "Features", inputColumnName: nameof(SentimentData.Sentimento))
