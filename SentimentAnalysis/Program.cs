@@ -9,72 +9,39 @@ namespace SentimentAnalysis
 {
     class Program
     {
-        static readonly string _dataPath = 
-            Path.Combine(Environment.CurrentDirectory, "Data", "yelp_labelled.txt");
-
         static void Main(string[] args)
         {
-            MLContext mlContext = new MLContext();
-            TrainTestData splitDataView = LoadData(mlContext);
-            ITransformer model = BuildAndTrainModel(mlContext, splitDataView.TrainSet);
-            Evaluate(mlContext, model, splitDataView.TestSet);
-            UseModelWithSingleItem(mlContext, model);
-        }
+                        
+            List<SentimentData> sentimentDatas = new List<SentimentData>
+            {
+                new SentimentData { Sentiment = true, SentimentText = "muito bom" },
+                new SentimentData { Sentiment = true, SentimentText = "gostei disso" },
+                new SentimentData { Sentiment = true, SentimentText = "gostei do que vocês fizeram" },
+                new SentimentData { Sentiment = true, SentimentText = "bom trabalho" },
+                new SentimentData { Sentiment = false, SentimentText = "não gostei" },
+                new SentimentData { Sentiment = false, SentimentText = "muito ruim" }
+            };
 
-        private static void UseModelWithSingleItem(MLContext mlContext, ITransformer model)
-        {
-            PredictionEngine<SentimentData, SentimentPrediction> predictionFunction = 
-                mlContext.Model.CreatePredictionEngine<SentimentData, SentimentPrediction>(model);
+            MLContext mlContext = new MLContext(seed: 0);
+            IDataView dataView = mlContext.Data.LoadFromEnumerable<SentimentData>(sentimentDatas);
+            TrainTestData splitDataView = mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2);
+            var estimator = mlContext.Transforms.Text.FeaturizeText
+                (outputColumnName: "Features", inputColumnName: nameof(SentimentData.SentimentText))
+                .Append(mlContext.BinaryClassification.Trainers.SdcaLogisticRegression
+                (labelColumnName: "Label", featureColumnName: "Features"));
+
+            var model = estimator.Fit(splitDataView.TrainSet);
+            PredictionEngine<SentimentData, SentimentPrediction> predictionFunction 
+                = mlContext.Model.CreatePredictionEngine<SentimentData, SentimentPrediction>(model);
+
             SentimentData sampleStatement = new SentimentData
             {
-                SentimentText = "very not good"
+                SentimentText = "tá bom"
             };
-            var resultprediction = predictionFunction.Predict(sampleStatement);
+            var resultPrediction = predictionFunction.Predict(sampleStatement);
+            Console.WriteLine(resultPrediction.Prediction);
+            Console.ReadKey();          
 
-            Console.WriteLine();
-            Console.WriteLine("=============== Prediction Test of model with a single sample and test dataset ===============");
-
-            Console.WriteLine();
-            Console.WriteLine($"Sentiment: {resultprediction.SentimentText} | " +
-                $"Prediction: {(Convert.ToBoolean(resultprediction.Prediction) ? "Positive" : "Negative")} | " +
-                $"Probability: {resultprediction.Probability} ");
-
-            Console.WriteLine("=============== End of Predictions ===============");
-            Console.WriteLine();
-        }
-
-        public static void Evaluate(MLContext mlContext, ITransformer model, IDataView splitTestSet)
-        {
-            Console.WriteLine("=============== Evaluating Model accuracy with Test data===============");
-            IDataView predictions = model.Transform(splitTestSet);
-            CalibratedBinaryClassificationMetrics metrics = mlContext.BinaryClassification.Evaluate(predictions, "Label");
-            Console.WriteLine();
-            Console.WriteLine("Model quality metrics evaluation");
-            Console.WriteLine("--------------------------------");
-            Console.WriteLine($"Accuracy: {metrics.Accuracy:P2}");
-            Console.WriteLine($"Auc: {metrics.AreaUnderRocCurve:P2}");
-            Console.WriteLine($"F1Score: {metrics.F1Score:P2}");
-            Console.WriteLine("=============== End of model evaluation ===============");
-        }
-
-        private static ITransformer BuildAndTrainModel(MLContext mlContext, IDataView trainSet)
-        {
-            var estimator = mlContext.Transforms.Text
-                .FeaturizeText(outputColumnName: "Features", inputColumnName: nameof(SentimentData.SentimentText))
-                .Append(mlContext.BinaryClassification.Trainers.SdcaLogisticRegression(labelColumnName: "Label", featureColumnName: "Features"));
-            Console.WriteLine("=============== Create and Train the Model ===============");
-            var model = estimator.Fit(trainSet);
-            Console.WriteLine("=============== End of training ===============");
-            Console.WriteLine();
-            return model;
-        }
-
-        private static TrainTestData LoadData(MLContext mlContext)
-        {
-            IDataView dataView = mlContext.Data.LoadFromTextFile<SentimentData>
-                (_dataPath, hasHeader: false);
-            TrainTestData splitDataView = mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2);
-            return splitDataView;
         }
     }
 }
